@@ -5,6 +5,7 @@ extern crate structopt_derive;
 #[macro_use]
 extern crate html5ever;
 
+extern crate ansi_term;
 extern crate futures;
 extern crate structopt;
 extern crate tokio_core;
@@ -13,6 +14,7 @@ extern crate olifants;
 mod error;
 mod args;
 
+use ansi_term::Colour;
 use error::*;
 use futures::Stream;
 use html5ever::QualName;
@@ -51,21 +53,42 @@ quick_main!(|| -> Result<()> {
 });
 
 fn handle_event(status: olifants::api::v1::Status) -> () {
+    let name = format!(
+        "@{} {}",
+        status.account.acct,
+        status.account.display_name
+    );
+
+    let spoiler = remove_html(&status.spoiler_text);
+    let content = remove_html(&status.content);
+
+    let body = if spoiler.is_empty() {
+        content
+    } else {
+        format!(
+            "{}\n\n{}",
+            spoiler,
+            Colour::White.on(Colour::White).paint(content)
+        )
+    };
+
+    print!(
+        "{}\n{}\n{}",
+        Colour::Green.paint(name),
+        Colour::Blue.paint(status.created_at),
+        body
+    );
+}
+
+fn remove_html(text: &str) -> String {
     let node = html5ever::parse_fragment(
         RcDom::default(),
         Default::default(),
         QualName::new(None, ns!(), local_name!("")),
         Vec::new(),
-    ).one(status.content);
+    ).one(text);
 
-    // TODO: Handle content warning text
-    let content = flatten(String::new(), node.document);
-    print!(
-        "@{} {}\n{}",
-        status.account.acct,
-        status.account.display_name,
-        content
-    );
+    flatten(String::new(), node.document)
 }
 
 fn flatten(mut acc: String, node: rcdom::Handle) -> String {

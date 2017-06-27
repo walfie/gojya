@@ -4,6 +4,7 @@ name = "gojya"
 version = "0.1.0"
 
 [dependencies]
+ansi_term = "0.9"
 error-chain = "0.10"
 futures = "0.1"
 html5ever = "0.18"
