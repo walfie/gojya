@@ -6,6 +6,7 @@ extern crate structopt_derive;
 extern crate html5ever;
 
 extern crate ansi_term;
+extern crate chrono;
 extern crate futures;
 extern crate structopt;
 extern crate tokio_core;
@@ -15,6 +16,7 @@ mod error;
 mod args;
 
 use ansi_term::Colour;
+use chrono::offset::Local;
 use error::*;
 use futures::Stream;
 use html5ever::QualName;
@@ -53,11 +55,7 @@ quick_main!(|| -> Result<()> {
 });
 
 fn handle_event(status: olifants::api::v1::Status) -> () {
-    let name = format!(
-        "@{} {}",
-        status.account.acct,
-        status.account.display_name
-    );
+    let name = format!("@{} {}", status.account.acct, status.account.display_name);
 
     let spoiler = remove_html(&status.spoiler_text);
     let content = remove_html(&status.content);
@@ -72,10 +70,15 @@ fn handle_event(status: olifants::api::v1::Status) -> () {
         )
     };
 
+    // TODO: Add flag for 12-hour time
+    let timestamp = status.created_at.with_timezone(&Local).format(
+        "%Y/%m/%d %H:%M:%S",
+    );
+
     print!(
         "{}\n{}\n{}",
         Colour::Green.paint(name),
-        Colour::Blue.paint(status.created_at),
+        Colour::Blue.paint(format!("{}", timestamp)),
         body
     );
 }

@@ -5,6 +5,7 @@ version = "0.1.0"
 
 [dependencies]
 ansi_term = "0.9"
+chrono = "0.4"
 error-chain = "0.10"
 futures = "0.1"
 html5ever = "0.18"
@@ -14,4 +15,4 @@ tokio-core = "0.1"
 
 [dependencies.olifants]
 git = "https://github.com/walfie/olifants"
-rev = "4a54d2ef5e7473fe84f8abdce3351db81db16750"
+rev = "3f42140804742418c07fe7e1b33c923a1cf8b7cb"
