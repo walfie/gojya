@@ -16,6 +16,7 @@ mod error;
 mod args;
 
 use ansi_term::Colour;
+use args::Args;
 use chrono::offset::Local;
 use error::*;
 use futures::Stream;
@@ -25,7 +26,6 @@ use html5ever::tendril::TendrilSink;
 use olifants::Client;
 use std::default::Default;
 use std::string::String;
-use structopt::StructOpt;
 use tokio_core::reactor::Core;
 
 quick_main!(|| -> Result<()> {
@@ -35,11 +35,10 @@ quick_main!(|| -> Result<()> {
     )?;
 
 
-    let opt = args::Opt::from_args();
+    let args = Args::init()?;
 
-    // TODO: Assume HTTPS for instance if protocol unspecified
     let timeline = client
-        .timeline(&opt.instance, opt.access_token, opt.stream_type.0)
+        .timeline(&args.instance_url, args.access_token, args.endpoint)
         .for_each(|event| {
             use olifants::timeline::Event::*;
 
@@ -50,6 +49,8 @@ quick_main!(|| -> Result<()> {
 
             Ok(())
         });
+
+    println!("Connecting to {}", args.instance_url);
 
     core.run(timeline).chain_err(|| "timeline failed")
 });
