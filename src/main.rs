@@ -37,22 +37,43 @@ quick_main!(|| -> Result<()> {
 
     let args = Args::init()?;
 
-    let timeline = client
-        .timeline(&args.instance_url, args.access_token, args.endpoint)
-        .for_each(|event| {
-            use olifants::timeline::Event::*;
+    // If the connection is dropped or an error occurs, wait and retry
+    loop {
+        let timeline = client
+            .timeline(
+                &args.instance_url,
+                args.access_token.clone(),
+                args.endpoint.clone(),
+            )
+            .for_each(|event| {
+                use olifants::timeline::Event::*;
 
-            match event {
-                Update(status) => handle_event(*status),
-                _ => (),
-            };
+                match event {
+                    Update(status) => handle_event(*status),
+                    _ => (),
+                };
 
-            Ok(())
-        });
+                Ok(())
+            });
 
-    println!("Connecting to {}", args.instance_url);
+        println!("Connecting to {}", args.instance_url);
 
-    core.run(timeline).chain_err(|| "timeline failed")
+        if let Err(e) = core.run(timeline) {
+            // TODO: stderr
+            println!(
+                "Encountered error:\n{}",
+                error_chain::ChainedError::display(&e)
+            );
+        }
+
+        // TODO: Exponential backoff
+        let delay = ::std::time::Duration::from_secs(5);
+        println!("Retrying in 5 seconds...");
+        std::thread::sleep(delay);
+    }
+
+    // This needs to be here to satisfy the return type, even though it's unreachable
+    #[allow(unreachable_code)] Ok(())
 });
 
 fn handle_event(status: olifants::api::v1::Status) -> () {
