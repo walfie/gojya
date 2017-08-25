@@ -77,8 +77,6 @@ quick_main!(|| -> Result<()> {
 });
 
 fn handle_event(status: olifants::api::v1::Status) -> () {
-    let name = format!("@{} {}", status.account.acct, status.account.display_name);
-
     let spoiler = remove_html(&status.spoiler_text);
     let content = remove_html(&status.content);
 
@@ -98,8 +96,10 @@ fn handle_event(status: olifants::api::v1::Status) -> () {
     );
 
     print!(
-        "{}\n{}\n{}",
-        Colour::Green.paint(name),
+        "{}{} {}\n{}\n{}",
+        Colour::Green.paint("@"),
+        Colour::Green.paint(status.account.acct),
+        Colour::Cyan.paint(status.account.display_name),
         Colour::Blue.paint(format!("{}", timestamp)),
         body
     );
