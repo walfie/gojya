@@ -45,6 +45,7 @@ quick_main!(|| -> Result<()> {
                 args.access_token.clone(),
                 args.endpoint.clone(),
             )
+            .chain(::futures::stream::once(Err("stream closed".into())))
             .for_each(|event| {
                 use olifants::timeline::Event::*;
 
