@@ -8,21 +8,21 @@ extern crate html5ever;
 extern crate ansi_term;
 extern crate chrono;
 extern crate futures;
+extern crate olifants;
 extern crate structopt;
 extern crate tokio_core;
-extern crate olifants;
 
-mod error;
 mod args;
+mod error;
 
 use ansi_term::Colour;
 use args::Args;
 use chrono::offset::Local;
 use error::*;
 use futures::Stream;
-use html5ever::QualName;
 use html5ever::rcdom::{self, NodeData, RcDom};
 use html5ever::tendril::TendrilSink;
+use html5ever::QualName;
 use olifants::Client;
 use std::default::Default;
 use std::string::String;
@@ -30,10 +30,7 @@ use tokio_core::reactor::Core;
 
 quick_main!(|| -> Result<()> {
     let mut core = Core::new().chain_err(|| "could not create Core")?;
-    let client = Client::new(&core.handle(), "gojya").chain_err(
-        || "could not create Client",
-    )?;
-
+    let client = Client::new(&core.handle(), "gojya").chain_err(|| "could not create Client")?;
 
     let args = Args::init()?;
 
@@ -74,7 +71,8 @@ quick_main!(|| -> Result<()> {
     }
 
     // This needs to be here to satisfy the return type, even though it's unreachable
-    #[allow(unreachable_code)] Ok(())
+    #[allow(unreachable_code)]
+    Ok(())
 });
 
 fn handle_event(status: olifants::api::v1::Status) -> () {
@@ -92,17 +90,40 @@ fn handle_event(status: olifants::api::v1::Status) -> () {
     };
 
     // TODO: Add flag for 12-hour time
-    let timestamp = status.created_at.with_timezone(&Local).format(
-        "%Y/%m/%d %H:%M:%S",
-    );
+    let timestamp = status
+        .created_at
+        .with_timezone(&Local)
+        .format("%Y/%m/%d %H:%M:%S");
+
+    let media: Vec<String> = status
+        .media_attachments
+        .iter()
+        .map(|media| {
+            let emoji = match media.media_type.as_ref() {
+                "image" => "🖼️ ",
+                "video" | "gifv" => "📺 ",
+                _ => "📎 ",
+            };
+
+            let url = media
+                .remote_url
+                .as_ref()
+                .or(media.text_url.as_ref())
+                .unwrap_or(&media.url);
+
+            format!("{} {}", emoji, url)
+        })
+        .collect();
 
     print!(
-        "{}{} {}\n{}\n{}",
+        "{}{} {}\n{}\n{}{}{}",
         Colour::Green.paint("@"),
         Colour::Green.paint(status.account.acct),
         Colour::Cyan.paint(status.account.display_name),
         Colour::Blue.paint(format!("{}", timestamp)),
-        body
+        body,
+        media.join("\n"),
+        if media.is_empty() { "" } else { "\n\n" },
     );
 }
 
@@ -128,13 +149,11 @@ fn flatten(mut acc: String, node: rcdom::Handle) -> String {
     }
 
     match node.data {
-        NodeData::Element { ref name, .. } => {
-            match name.local {
-                local_name!("p") => acc.push_str("\n\n"),
-                local_name!("br") => acc.push_str("\n"),
-                _ => (),
-            }
-        }
+        NodeData::Element { ref name, .. } => match name.local {
+            local_name!("p") => acc.push_str("\n\n"),
+            local_name!("br") => acc.push_str("\n"),
+            _ => (),
+        },
 
         _ => (),
     }

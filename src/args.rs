@@ -4,17 +4,29 @@ use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
 struct Opt {
-    #[structopt(short = "i", long = "instance",
-                help = "Instance URL (if protocol is absent, `https` is assumed)")]
+    #[structopt(
+        short = "i",
+        long = "instance",
+        help = "Instance URL (if protocol is absent, `https` is assumed)"
+    )]
     pub instance: String,
 
-    #[structopt(short = "t", long = "token",
-                help = "Access token. If unspecified, uses the \
-                        `MASTODON_ACCESS_TOKEN` environment variable.")]
+    #[structopt(
+        short = "t",
+        long = "token",
+        help = "Access token. If unspecified, uses the \
+                `MASTODON_ACCESS_TOKEN` environment variable."
+    )]
     pub token: Option<String>,
 
-    #[structopt(long = "timeline", help = "Timeline type", default_value = "local",
-                possible_value = "local", possible_value = "federated", possible_value = "user")]
+    #[structopt(
+        long = "timeline",
+        help = "Timeline type",
+        default_value = "local",
+        possible_value = "local",
+        possible_value = "federated",
+        possible_value = "user"
+    )]
     pub timeline: String,
 }
 
@@ -36,11 +48,12 @@ impl Args {
                 format!("https://{}", args.instance)
             };
 
-        let access_token = args.token
+        let access_token = args
+            .token
             .or_else(|| ::std::env::var("MASTODON_ACCESS_TOKEN").ok())
             .ok_or_else(|| {
                 let msg = "please specify an access token with `--token`, or by \
-                       setting the `MASTODON_ACCESS_TOKEN` environment variable";
+                           setting the `MASTODON_ACCESS_TOKEN` environment variable";
                 Error::from_kind(ErrorKind::Msg(msg.into()))
             })?;
 
